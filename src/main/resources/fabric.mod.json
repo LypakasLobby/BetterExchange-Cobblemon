@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "betterexchange",
+  "version": "${version}",
+  "name": "BetterExchange",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/betterexchange/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.lypaka.betterexchange.BetterExchange"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
