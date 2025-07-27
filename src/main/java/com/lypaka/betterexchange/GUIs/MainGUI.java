@@ -78,7 +78,7 @@ public class MainGUI {
 
                         try {
 
-                            ExchangeGUI.openExchangeMenu(action.getPlayer(), 1);
+                            ExchangeGUI.open(player);
 
                         } catch (ObjectMappingException e) {
 

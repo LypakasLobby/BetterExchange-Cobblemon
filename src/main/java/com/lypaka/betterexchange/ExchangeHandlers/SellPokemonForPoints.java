@@ -11,13 +11,12 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 public class SellPokemonForPoints {
 
-    public static void tradeIn (ServerPlayerEntity player, Pokemon pokemon, int slot, int points) throws ObjectMappingException {
+    public static void tradeIn (ServerPlayerEntity player, Pokemon pokemon, int points) throws ObjectMappingException {
 
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
-
         if (party.size() > 1) {
 
-            party.set(slot, null);
+            party.remove(pokemon);
             Points.setPoints(player.getUuid(), Points.getPoints(player.getUuid()) + points);
             player.sendMessage(FancyTextHandler.getFormattedText("&4You traded in your " + pokemon.getSpecies().getName() + " for " + points + " Legendary Points!"));
 

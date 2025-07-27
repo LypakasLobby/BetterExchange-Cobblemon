@@ -3,7 +3,9 @@ package com.lypaka.betterexchange.GUIs;
 import ca.landonjw.gooeylibs2.api.UIManager;
 import ca.landonjw.gooeylibs2.api.button.Button;
 import ca.landonjw.gooeylibs2.api.button.GooeyButton;
-import ca.landonjw.gooeylibs2.api.page.GooeyPage;
+import ca.landonjw.gooeylibs2.api.button.PlaceholderButton;
+import ca.landonjw.gooeylibs2.api.helpers.PaginationHelper;
+import ca.landonjw.gooeylibs2.api.page.LinkedPage;
 import ca.landonjw.gooeylibs2.api.template.types.ChestTemplate;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.item.PokemonItem;
@@ -29,184 +31,72 @@ public class ExchangeGUI {
 
     public static Map<Integer, Map<Integer, Integer>> slotMap = new HashMap<>();
 
-    public static void openExchangeMenu (ServerPlayerEntity player, int pageNum) throws ObjectMappingException {
+    public static void open (ServerPlayerEntity player) throws ObjectMappingException {
 
+        PlaceholderButton placeholderButton = new PlaceholderButton();
+        List<Button> buttons = new ArrayList<>();
+        ItemStack border = ItemStackHandler.buildFromStringID("minecraft:red_stained_glass_pane");
+        border.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText(""));
         Map<String, Map<String, String>> buyMap = ConfigGetters.exchangeBuyMap;
-        int slots = buyMap.size();
-        if (slots > 243) {
+        for (Map.Entry<String, Map<String, String>> entry : buyMap.entrySet()) {
 
-            player.sendMessage(FancyTextHandler.getFormattedText("&cExceeding maximum slots...somehow!"));
-            return;
+            Map<String, String> entryData = entry.getValue();
+            Button button = getSlotButton(entryData, player);
+            buttons.add(button);
 
         }
+        ItemStack sachet = ItemStackHandler.buildFromStringID("cobblemon:sachet");
+        sachet.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&eCurrent LP:&a " + Points.getPoints(player.getUuid())));
+        GooeyButton sachetButton = GooeyButton.builder()
+                .display(sachet)
+                .build();
+        ItemStack diamond = ItemStackHandler.buildFromStringID("minecraft:diamond");
+        diamond.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&eMain Menu"));
+        GooeyButton diamondButton = GooeyButton.builder()
+                .display(diamond)
+                .onClick(action -> {
 
-        // Properly handle more than 45 slots available for buying
-        int[] utilBar = new int[]{45, 46, 47, 48, 49, 50, 51, 52, 53};
+                    MainGUI.openMainGui(action.getPlayer());
 
-        ChestTemplate template = ChestTemplate.builder(6).build();
-        GooeyPage page = GooeyPage.builder()
-                .template(template)
-                .title(FancyTextHandler.getFormattedString("&eExchange Menu Page " + pageNum))
+                })
+                .build();
+        ItemStack close = ItemStackHandler.buildFromStringID("minecraft:barrier");
+        close.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&cClose"));
+        GooeyButton closeButton = GooeyButton.builder()
+                .display(close)
+                .onClick(action -> {
+
+                    UIManager.closeUI(action.getPlayer());
+
+                })
+                .build();
+        ChestTemplate template = ChestTemplate.builder(6)
+                .rectangle(0, 0, 5, 9, placeholderButton)
+                .fill(GooeyButton.builder().display(border).build())
+                .set(45, CommonButtons.getPrev())
+                .set(53, CommonButtons.getNext())
+                .set(47, sachetButton)
+                .set(49, diamondButton)
+                .set(51, closeButton)
                 .build();
 
-        Map<Integer, Integer> miniMap = slotMap.get(pageNum);
-        int max = 0;
-        int min = 0;
-        for (Map.Entry<Integer, Integer> entry : miniMap.entrySet()) {
-
-            min = entry.getKey();
-            max = entry.getValue();
-
-        }
-        int slotIndex = 0;
-        int filledSlots = 0;
-        for (int i = min; i < max; i++) {
-
-            if (buyMap.containsKey("Slot-" + i)) {
-
-                page.getTemplate().getSlot(slotIndex).setButton(getSlotButton(buyMap.get("Slot-" + i), player));
-                filledSlots++;
-
-            } else {
-
-                page.getTemplate().getSlot(slotIndex).setButton(getAirButton());
-
-            }
-
-            slotIndex++;
-
-        }
-
-        for (int i : utilBar) {
-
-            page.getTemplate().getSlot(i).setButton(getUtilButton(i, player));
-
-        }
-
-        // max of 243 slots (3 for each legendary)
-        // max of like 5 and a half pages
-        if (pageNum < 6) {
-
-            if (slots > 45) {
-
-                if (filledSlots == 45) {
-
-                    int nextPage = pageNum + 1;
-                    page.getTemplate().getSlot(53).setButton(getNextButton(nextPage));
-
-                }
-
-            }
-
-        }
-
-        if (pageNum > 1) {
-
-            int prevPage = pageNum - 1;
-            page.getTemplate().getSlot(45).setButton(getPrevButton(prevPage));
-
-        }
+        LinkedPage page = PaginationHelper.createPagesFromPlaceholders(template, buttons, null);
+        page.setTitle(FancyTextHandler.getFormattedText("&eExchange Menu"));
+        setTitle(page);
 
         UIManager.openUIForcefully(player, page);
 
     }
 
-    private static Button getPrevButton (int pageNum) {
+    private static void setTitle (LinkedPage page) {
 
-        ItemStack prev = ItemStackHandler.buildFromStringID("minecraft:arrow");
-        prev.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&ePrevious Page"));
-        return GooeyButton.builder()
-                .display(prev)
-                .onClick(action -> {
+        LinkedPage next = page.getNext();
+        if (next != null) {
 
-                    try {
-
-                        openExchangeMenu(action.getPlayer(), pageNum);
-
-                    } catch (ObjectMappingException e) {
-
-                        e.printStackTrace();
-
-                    }
-
-                })
-                .build();
-
-    }
-
-    private static Button getNextButton (int pageNum) {
-
-        ItemStack next = ItemStackHandler.buildFromStringID("minecraft:arrow");
-        next.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&eNext Page"));
-        return GooeyButton.builder()
-                .display(next)
-                .onClick(action -> {
-
-                    try {
-
-                        openExchangeMenu(action.getPlayer(), pageNum);
-
-                    } catch (ObjectMappingException e) {
-
-                        e.printStackTrace();
-
-                    }
-
-                })
-                .build();
-
-    }
-
-    // int[] utilBar = new int[]{45, 46, 47, 48, 49, 50, 51, 52, 53};
-    private static Button getUtilButton (int slot, ServerPlayerEntity player) {
-
-        Button button;
-        ItemStack itemStack;
-        if (slot == 45 || slot == 46 || slot == 48 || slot == 50 || slot == 52 || slot == 53) {
-
-            itemStack = ItemStackHandler.buildFromStringID("minecraft:red_stained_glass_pane");
-            itemStack.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText(""));
-            button = GooeyButton.builder()
-                    .display(itemStack)
-                    .build();
-
-        } else if (slot == 47) {
-
-            itemStack = ItemStackHandler.buildFromStringID("cobblemon:sachet");
-            itemStack.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&eCurrent LP:&a " + Points.getPoints(player.getUuid())));
-            button = GooeyButton.builder()
-                    .display(itemStack)
-                    .build();
-
-        } else if (slot == 49) {
-
-            itemStack = ItemStackHandler.buildFromStringID("minecraft:diamond");
-            itemStack.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&eMain Menu"));
-            button = GooeyButton.builder()
-                    .display(itemStack)
-                    .onClick(action -> {
-
-                        MainGUI.openMainGui(action.getPlayer());
-
-                    })
-                    .build();
-
-        } else {
-
-            itemStack = ItemStackHandler.buildFromStringID("minecraft:barrier");
-            itemStack.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&cClose"));
-            button = GooeyButton.builder()
-                    .display(itemStack)
-                    .onClick(action -> {
-
-                        UIManager.closeUI(action.getPlayer());
-
-                    })
-                    .build();
+            next.setTitle(FancyTextHandler.getFormattedText("&eExchange Menu"));
+            setTitle(next);
 
         }
-
-        return button;
 
     }
 
@@ -225,11 +115,13 @@ public class ExchangeGUI {
             pokemon = null;
 
         }
+        String form = null;
+        int level = 0;
         if (pokemon != null) {
 
             if (data.containsKey("Form")) {
 
-                String form = data.get("Form");
+                form = data.get("Form");
                 if (!form.equalsIgnoreCase("default")) {
 
                     pokemon.setForm(pokemon.getSpecies().getFormByName(form));
@@ -239,12 +131,27 @@ public class ExchangeGUI {
             }
             if (data.containsKey("Level")) {
 
-                pokemon.setLevel(Integer.parseInt(data.get("Level")));
+                level = Integer.parseInt(data.get("Level"));
+                pokemon.setLevel(level);
 
             }
             displayStack = PokemonItem.from(pokemon);
             displayStack.set(DataComponentTypes.CUSTOM_NAME, FancyTextHandler.getFormattedText("&a" + pokemon.getSpecies().getName()));
             List<Text> lore = new ArrayList<>();
+            if (form != null) {
+
+                if (!form.equalsIgnoreCase("default")) {
+
+                    lore.add(FancyTextHandler.getFormattedText("&eForm: &a" + form));
+
+                }
+
+            }
+            if (level > 0) {
+
+                lore.add(FancyTextHandler.getFormattedText("&eLevel: &a" + level));
+
+            }
             lore.add(FancyTextHandler.getFormattedText(""));
             lore.add(FancyTextHandler.getFormattedText("&ePrice: &a" + price));
             displayStack.set(DataComponentTypes.LORE, new LoreComponent(lore));

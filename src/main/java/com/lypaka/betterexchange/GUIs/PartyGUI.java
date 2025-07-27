@@ -67,7 +67,6 @@ public class PartyGUI {
             if (passes) {
 
                 int points = PointValidation.getPointWorth(pokemon);
-                int finalI = i;
                 List<String> displayLore = ConfigGetters.partyGUISpriteLore;
                 List<Text> lore = new ArrayList<>();
                 for (String l : displayLore) {
@@ -82,7 +81,7 @@ public class PartyGUI {
 
                             try {
 
-                                SellPokemonForPoints.tradeIn(this.player, pokemon, finalI, points);
+                                SellPokemonForPoints.tradeIn(this.player, pokemon, points);
 
                             } catch (ObjectMappingException e) {
 
